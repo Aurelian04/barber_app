@@ -1,0 +1,33 @@
+# Virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Django stuff
+db.sqlite3
+*.log
+
+# Environment variables
+.env
+
+# VSCode settings
+.vscode/
+
+# Docker
+*.pid
+*.db
+*.sock
+*.env
+*.log
+
+# Migrations cache
+*/migrations/__pycache__/
+
+# Byte-compiled
+*.pyc
+
+# System files
+.DS_Store
+Thumbs.db
