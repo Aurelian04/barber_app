@@ -1,14 +1,28 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
+from django.utils.translation import gettext_lazy as _
+
 from .models import User
 
+
 @admin.register(User)
-class CustomUserAdmin(UserAdmin):
-    model = User
-    list_display = ["id", "username", "email", "is_barber", "is_client", "is_staff"]
-    fieldsets = UserAdmin.fieldsets + (
-        ("Roluri", {"fields": ("is_barber", "is_client", "phone")}),
+class UserAdmin(DjangoUserAdmin):
+    # Ce vezi în listă (Read / List)
+    list_display = ("id", "username", "email", "phone", "is_barber", "is_client", "is_staff", "is_active")
+    list_filter = ("is_barber", "is_client", "is_staff", "is_active")
+
+    # Căutare (Search)
+    search_fields = ("username", "email", "phone")
+
+    # Sortare
+    ordering = ("-id",)
+
+    # Cum arată pagina de edit (Update)
+    fieldsets = DjangoUserAdmin.fieldsets + (
+        (_("Extra fields"), {"fields": ("phone", "is_barber", "is_client")}),
     )
-    add_fieldsets = UserAdmin.add_fieldsets + (
-        ("Roluri", {"fields": ("is_barber", "is_client", "phone")}),
+
+    # Cum arată pagina de create user (Create)
+    add_fieldsets = DjangoUserAdmin.add_fieldsets + (
+        (_("Extra fields"), {"fields": ("email", "phone", "is_barber", "is_client")}),
     )
