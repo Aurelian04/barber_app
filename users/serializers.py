@@ -21,7 +21,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'phone', 'is_barber', 'is_client']
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'phone', 'is_barber', 'is_client']
         read_only_fields = ['id', 'is_barber', 'is_client', 'email']
         
     def update(self, instance, validated_data):

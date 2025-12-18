@@ -8,11 +8,12 @@ from .models import User
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
     # Ce vezi în listă (Read / List)
-    list_display = ("id", "username", "email", "phone", "is_barber", "is_client", "is_staff", "is_active")
+    list_display = ("id", "username", "email", "phone", 
+                    "first_name", "last_name", "is_barber", "is_client", "is_staff", "is_active")
     list_filter = ("is_barber", "is_client", "is_staff", "is_active")
 
     # Căutare (Search)
-    search_fields = ("username", "email", "phone")
+    search_fields = ("username", "first_name", "last_name", "email", "phone")
 
     # Sortare
     ordering = ("-id",)
