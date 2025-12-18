@@ -8,12 +8,8 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 
-class RegisterView(APIView):
-    def post(self, request):
-        serializer = UserRegisterSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+class RegisterView(generics.CreateAPIView):
+    serializer_class = UserRegisterSerializer
     
 class MeView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = UserSerializer
