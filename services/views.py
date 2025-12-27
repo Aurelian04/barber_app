@@ -1,3 +1,12 @@
-from django.shortcuts import render
+from rest_framework import generics, permissions
+from .serializers import ServiceSerializer
+from .models import Service
 
-# Create your views here.
+
+class ServiceViewList(generics.ListAPIView):
+    
+    serializer_class = ServiceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        return Service.objects.filter(is_active=True).order_by("name")
