@@ -2,7 +2,7 @@ from rest_framework import generics, permissions
 from rest_framework.viewsets import ModelViewSet
 
 
-from .permissions import IsBarber
+from .permissions import IsBarberOrStaff
 from .models import Service
 from .serializers import ServiceSerializer
 
@@ -22,7 +22,7 @@ class ServiceViewList(generics.ListAPIView):
 
 class BarberServiceViewSet(ModelViewSet):
     serializer_class = ServiceSerializer
-    permission_classes = [IsBarber]
+    permission_classes = [IsBarberOrStaff]
 
     def get_queryset(self):
         return Service.objects.filter(barber=self.request.user).order_by("name")
