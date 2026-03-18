@@ -56,3 +56,43 @@ class AppointmentApiTests(APITestCase):
         self.assertEqual(appointment.barber, self.barber_user)
         self.assertEqual(appointment.service, self.service)
         self.assertEqual(appointment.status, Appointment.Status.BOOKED)
+        
+    def test_client_can_cancel_booked_appointment(self):
+        appointment = Appointment.objects.create(
+            barber=self.barber_user,
+            client=self.client_user,
+            service=self.service,
+            start_time=timezone.now() + timedelta(days=1),
+            end_time=timezone.now() + timedelta(days=1, minutes=45),
+            status=Appointment.Status.BOOKED,
+            notes="Test cancel",
+        )
+        
+        self.client.force_authenticate(user=self.client_user)
+        
+        response = self.client.post(f"/api/appointments/{appointment.id}/cancel/")
+        
+        appointment.refresh_from_db()
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(appointment.status, Appointment.Status.CANCELLED)
+        
+    def test_barber_cannot_complete_cancelled_appointment(self):
+        appointment = Appointment.objects.create(
+            barber=self.barber_user,
+            client=self.client_user,
+            service=self.service,
+            start_time=timezone.now() + timedelta(days=1),
+            end_time=timezone.now() + timedelta(days=1, minutes=45),
+            status=Appointment.Status.CANCELLED,
+            notes="Alerady cancelled",
+        )
+        
+        self.client.force_authenticate(user=self.barber_user)
+        
+        response = self.client.post(f"/api/barber/appointments/{appointment.id}/complete/")
+        
+        appointment.refresh_from_db()
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(appointment.status, Appointment.Status.CANCELLED)
