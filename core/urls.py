@@ -12,4 +12,5 @@ urlpatterns = [
     # DRF Users API
     path("api/user/", include("users.urls")),
     path("api/", include("services.urls")),
+    path("api/", include("appointments.urls")),
 ]
