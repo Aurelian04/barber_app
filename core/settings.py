@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "users",
     "services",
     "appointments",
+    "availability",
 ]
 
 AUTH_USER_MODEL = "users.User"
