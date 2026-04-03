@@ -194,3 +194,54 @@ class BarberScheduleException(models.Model):
             f"{self.date} | "
             f"{self.start_time} - {self.end_time}"
         )
+        
+
+class LunchBreak(models.Model):
+    weekly_schedule = models.OneToOneField(
+        BarberWeeklySchedule,
+        on_delete=models.CASCADE,
+        related_name="lunch_break",
+    )
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+
+    class Meta:
+        ordering = ["weekly_schedule", "start_time"]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(start_time__lt=F("end_time")),
+                name="lunch_break_start_before_end",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+
+        if not self.weekly_schedule_id:
+            raise ValidationError({"weekly_schedule": "Weekly schedule is required."})
+
+        if not self.weekly_schedule.is_active:
+            raise ValidationError(
+                {"weekly_schedule": "Cannot add a lunch break to an inactive schedule."}
+            )
+
+        if self.start_time < self.weekly_schedule.start_time:
+            raise ValidationError(
+                {"start_time": "Lunch break cannot start before the working schedule starts."}
+            )
+
+        if self.end_time > self.weekly_schedule.end_time:
+            raise ValidationError(
+                {"end_time": "Lunch break cannot end after the working schedule ends."}
+            )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return (
+            f"{self.weekly_schedule.barber.username} | "
+            f"{self.weekly_schedule.get_weekday_display()} | "
+            f"{self.start_time} - {self.end_time}"
+        )
