@@ -15,4 +15,76 @@ class BarberScheduleSerializer(serializers.ModelSerializer):
             "end_time",
             "is_active",
         ]
-        read_only_fields = ["id", "barber", "is_active"]
+        read_only_fields = ["id", "barber"]
+        
+    def validate(self, attrs):
+        request = self.context.get("request")
+        
+        if request is None or not request.user.is_authenticated:
+            raise serializers.ValidationError("Authentication is required.")
+        
+        if not request.user.is_barber:
+            raise serializers.ValidationError("Only barbers can manage weekly schedules.")
+        
+        return attrs
+    
+    def create(self, validated_data):
+        validated_data["barber"] = self.context["request"].user
+        return super().create(validated_data)
+    
+    
+class LunchBreakSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LunchBreak
+        fields = [
+            "weekly_schedule",
+            "start_time",
+            "end_time",
+        ]
+        
+    def validate(self, attrs):
+        request = self.context.get("request")
+        
+        if request is None or not request.user.is_authenticated:
+            raise serializers.ValidationError("Authentication is required.")
+        
+        if not request.user.is_barber:
+            raise serializers.ValidationError("Only barbers can manage lunch breaks.")
+        
+        weekly_schedule = attrs.get("weekly_schedule")
+        
+        if weekly_schedule.barber != request.user:
+            raise serializers.ValidationError(
+                {"weekly_schedule": "You can only add a lunch break to your own weekly schedule."}
+            )
+        
+        return attrs
+    
+class BarberScheduleExceptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BarberScheduleException
+        fields = [
+            "id",
+            "barber",
+            "date",
+            "start_time",
+            "end_time",
+            "is_day_off",
+            "reason",
+        ]
+        read_only_fields = ["id", "barber"]
+        
+    def validate(self, attrs):
+        request = self.context.get("request")
+        
+        if request is None or not request.user.is_authenticated:
+            raise serializers.ValidationError("Authentication is required.")
+        
+        if not request.user.is_barber:
+            raise serializers.ValidationError("Only barbers can modify their schedule.")
+        
+        return attrs
+    
+    def create(self, validated_data):
+        validated_data["barber"] = self.context["request"].user
+        return super().create(validated_data)
