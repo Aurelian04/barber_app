@@ -4,7 +4,7 @@ from .models import BarberWeeklySchedule, LunchBreak, BarberScheduleException
 
 
 
-class BarberScheduleSerializer(serializers.ModelSerializer):
+class BarberWeeklyScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = BarberWeeklySchedule
         fields = [
@@ -37,6 +37,7 @@ class LunchBreakSerializer(serializers.ModelSerializer):
     class Meta:
         model = LunchBreak
         fields = [
+            "id",
             "weekly_schedule",
             "start_time",
             "end_time",
@@ -51,7 +52,10 @@ class LunchBreakSerializer(serializers.ModelSerializer):
         if not request.user.is_barber:
             raise serializers.ValidationError("Only barbers can manage lunch breaks.")
         
-        weekly_schedule = attrs.get("weekly_schedule")
+        weekly_schedule = attrs.get(
+        "weekly_schedule",
+        self.instance.weekly_schedule if self.instance else None
+    )
         
         if weekly_schedule.barber != request.user:
             raise serializers.ValidationError(
