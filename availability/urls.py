@@ -6,3 +6,5 @@ router = DefaultRouter()
 router.register(r"barber/weekly-schedules", BarberWeeklyScheduleViewSet, basename="weekly-schedule")
 router.register(r"barber/lunch-breaks", LunchBreakViewSet, basename="barber-lunch")
 router.register(r"barber/exception-schedules", BarberScheduleExceptionViewSet, basename="keekly-exception")
+
+urlpatterns = router.urls
