@@ -281,3 +281,20 @@ class AvailabilityApiTests(APITestCase):
         schedule.refresh_from_db()
         
         self.assertEqual(BarberWeeklySchedule.objects.filter(id=schedule.id).exists(), True)
+        
+    def test_cannot_create_schedule_with_invalid_time(self):
+        self.client.force_authenticate(user=self.barber_user)
+
+        payload = {
+            "weekday": 1,
+            "start_time": "09:00:00",
+            "end_time": "08:00:00",
+            "is_active": True,
+        }
+
+        url = "/api/barber/weekly-schedules/"
+
+        response = self.client.post(url, payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("__all__", response.data)
