@@ -8,7 +8,7 @@ from rest_framework.test import APITestCase
 
 from .models import BarberWeeklySchedule, LunchBreak, BarberScheduleException
 
-class AvailabilityApiTests(APITestCase):
+class BarberWeeklyScheduleApiTests(APITestCase):
     def setUp(self):
         self.User = get_user_model()
         
@@ -298,3 +298,40 @@ class AvailabilityApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("__all__", response.data)
+        
+
+class LunchBreakApiTests(APITestCase):
+    def setUp(self):
+        self.User = get_user_model()
+        
+        self.barber_user = self.User.objects.create_user(
+            username="barber",
+            email="barber@example.com",
+            password="testpass123",
+            is_barber=True,
+        )
+        
+        self.weekly_schedule = BarberWeeklySchedule.objects.create(
+            barber=self.barber_user,
+            weekday=1,
+            start_time="09:00:00",
+            end_time="17:00:00",
+            is_active=True,
+        )
+        
+    def test_barber_can_create_lunch_break(self):
+        self.client.force_authenticate(user=self.barber_user)
+        
+        payload = {
+            "weekly_schedule": self.weekly_schedule.id,
+            "start_time": "12:00:00",
+            "end_time": "12:30:00",
+        }
+        
+        url = "/api/barber/lunch-breaks/"
+        
+        response = self.client.post(url, payload, format="json")
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(LunchBreak.objects.count(), 1)
+        self.assertEqual(response.data["weekly_schedule"], self.weekly_schedule.id)
