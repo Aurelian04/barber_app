@@ -319,6 +319,13 @@ class LunchBreakApiTests(APITestCase):
             is_active=True,
         )
         
+        self.barber_user2 = self.User.objects.create(
+            username="barber2",
+            email="test2@barber.com",
+            password="testpass112",
+            is_barber=True,
+        )
+        
     def test_barber_can_create_lunch_break(self):
         self.client.force_authenticate(user=self.barber_user)
         
@@ -422,3 +429,78 @@ class LunchBreakApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(LunchBreak.objects.filter(id=lunch.id).exists(), False)
         
+    def test_barber_cannot_see_another_barber_lunch_break(self):
+        barber2 = self.barber_user2
+        
+        lunchBreak = LunchBreak.objects.create(
+            weekly_schedule=self.weekly_schedule,
+            start_time="12:00:00",
+            end_time="12:30:00",
+        )
+        
+        self.client.force_authenticate(user=barber2)
+        
+        url = f"/api/barber/lunch-breaks/{lunchBreak.id}/"
+        
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn("detail", response.data)
+        
+    def test_barber_cannot_create_lunch_break_over_another_barber_schedule(self):
+        weekly_schedule_1 = self.weekly_schedule
+
+        self.client.force_authenticate(user=self.barber_user2)
+
+        payload = {
+            "weekly_schedule": weekly_schedule_1.id,
+            "start_time": "12:00:00",
+            "end_time": "12:30:00",
+        }
+
+        url = "/api/barber/lunch-breaks/"
+
+        response = self.client.post(url, payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("weekly_schedule", response.data)
+        self.assertEqual(LunchBreak.objects.count(), 0)
+        
+    def test_barber_cannot_modify_another_barber_lunch_break(self):
+        lunchBreak1 = LunchBreak.objects.create(
+            weekly_schedule=self.weekly_schedule,
+            start_time="12:00:00",
+            end_time="12:30:00",
+        )
+        
+        self.client.force_authenticate(user=self.barber_user2)
+        
+        payload = {
+            "weekly_schedule": self.weekly_schedule.id,
+            "start_time": "12:30:00",
+            "end_time": "13:00:00",
+        }
+        
+        url = f"/api/barber/lunch-breaks/{lunchBreak1.id}/"
+        
+        response = self.client.patch(url, payload, format="json")
+        
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn("detail", response.data)
+        self.assertEqual(str(lunchBreak1.start_time), "12:00:00")
+        
+    def test_barber_cannot_delete_another_barber_lunch_break(self):
+        lunchBreak1 = LunchBreak.objects.create(
+            weekly_schedule=self.weekly_schedule,
+            start_time="12:00:00",
+            end_time="12:30:00",
+        )
+        
+        self.client.force_authenticate(user=self.barber_user2)
+        
+        url = f"/api/barber/lunch-breaks/{lunchBreak1.id}/"
+        
+        response = self.client.delete(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(LunchBreak.objects.filter(id=lunchBreak1.id).exists())
