@@ -504,3 +504,68 @@ class LunchBreakApiTests(APITestCase):
         
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue(LunchBreak.objects.filter(id=lunchBreak1.id).exists())
+        
+    def test_non_barber_cannot_create_lunch_break(self):
+        user1 = self.User.objects.create_user(
+            username="User",
+            email="user@gmail.com",
+            password="pass12U",
+            is_barber=False,
+        )
+        
+        self.client.force_authenticate(user=user1)
+        
+        payload = {
+            "weekly_schedule": self.weekly_schedule.id,
+            "start_time": "12:00:00",
+            "end_time": "12:30:00",
+        }
+        
+        url = f"/api/barber/lunch-breaks/"
+        
+        response = self.client.post(url, payload, format="json")
+        
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(LunchBreak.objects.count(), 0)
+        
+    def test_staff_can_see_all_lunch_breaks(self):
+        weeklySchedule2 = BarberWeeklySchedule.objects.create(
+            barber=self.barber_user2,
+            weekday=1,
+            start_time="09:00:00",
+            end_time="17:00:00",
+            is_active=True,
+        )
+        
+        lunchBreak1 = LunchBreak.objects.create(
+            weekly_schedule=self.weekly_schedule,
+            start_time="12:00:00",
+            end_time="12:30:00",
+        )
+        
+        lunchBreak2 = LunchBreak.objects.create(
+            weekly_schedule=weeklySchedule2,
+            start_time="12:00:00",
+            end_time="12:30:00",
+        )
+        
+        staffUser = self.User.objects.create_superuser(
+            username="User",
+            email="user@gmail.com",
+            password="pass12U",
+            is_barber=False,
+        )
+        
+        self.client.force_authenticate(user=staffUser)
+        
+        url = "/api/barber/lunch-breaks/"
+        
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        ids = [item["id"] for item in response.data]
+        
+        self.assertEqual(len(ids), 2)
+        self.assertIn(lunchBreak1.id, ids)
+        self.assertIn(lunchBreak2.id, ids)
