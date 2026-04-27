@@ -569,3 +569,18 @@ class LunchBreakApiTests(APITestCase):
         self.assertEqual(len(ids), 2)
         self.assertIn(lunchBreak1.id, ids)
         self.assertIn(lunchBreak2.id, ids)
+    
+    def test_start_time_less_than_end_time(self):
+        self.client.force_authenticate(user=self.barber_user)
+        
+        payload = {
+            "weekly_schedule": self.weekly_schedule.id,
+            "start_time": "12:30:00",
+            "end_time": "12:00:00",
+        }
+        
+        url = "/api/barber/lunch-breaks/"
+        
+        response = self.client.post(url, payload, format="json")
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
