@@ -80,6 +80,18 @@ class LunchBreakSerializer(serializers.ModelSerializer):
         
         return attrs
     
+    def create(self, validated_data):
+        try:
+            return super().create(validated_data)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(e.message_dict)
+        
+    def update(self, instance, validated_data):
+        try:
+            return super().update(instance, validated_data)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(e.message_dict)
+    
 class BarberScheduleExceptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = BarberScheduleException
