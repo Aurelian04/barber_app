@@ -585,3 +585,74 @@ class LunchBreakApiTests(APITestCase):
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("__all__", response.data)
+        
+    def test_barber_cannot_create_lunch_break_before_and_after_program(self):
+        self.client.force_authenticate(user=self.barber_user)
+        
+        payload = {
+            "weekly_schedule": self.weekly_schedule.id,
+            "start_time": "7:00:00",
+            "end_time": "19:15:00",
+        }
+        
+        url = "/api/barber/lunch-breaks/"
+        
+        response = self.client.post(url, payload, format="json")
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("start_time", response.data)
+
+    def test_barber_cannot_create_lunch_break_to_inactive_schedule(self):
+        schedule = BarberWeeklySchedule.objects.create(
+            barber=self.barber_user,
+            weekday=2,
+            start_time="08:00:00",
+            end_time="18:00:00",
+            is_active=False,
+        )
+        
+        self.client.force_authenticate(user=self.barber_user)
+        
+        payload = {
+            "weekly_schedule": schedule.id,
+            "start_time": "12:00:00",
+            "end_time": "12:30:00",
+        }
+        
+        url = "/api/barber/lunch-breaks/"
+        
+        response = self.client.post(url, payload, format="json")
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("weekly_schedule", response.data)
+        
+    def test_barber_cannot_create_lunch_break_with_empty_weekly_schedule(self):
+        self.client.force_authenticate(user=self.barber_user2)
+        
+        payload = {
+            "weekly_schedule": "",
+            "start_time": "12:00:00",
+            "end_time": "12:30:00",
+        }
+        
+        url = "/api/barber/lunch-breaks/"
+        
+        response = self.client.post(url, payload, format="json")
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("weekly_schedule", response.data)
+        
+    def test_barber_cannot_create_lunch_break_without_weekly_schedule(self):
+        self.client.force_authenticate(user=self.barber_user2)
+        
+        payload = {
+            "start_time": "12:00:00",
+            "end_time": "12:30:00",
+        }
+        
+        url = "/api/barber/lunch-breaks/"
+        
+        response = self.client.post(url, payload, format="json")
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("weekly_schedule", response.data)
