@@ -521,7 +521,7 @@ class LunchBreakApiTests(APITestCase):
             "end_time": "12:30:00",
         }
         
-        url = f"/api/barber/lunch-breaks/"
+        url = "/api/barber/lunch-breaks/"
         
         response = self.client.post(url, payload, format="json")
         
@@ -656,3 +656,34 @@ class LunchBreakApiTests(APITestCase):
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("weekly_schedule", response.data)
+        
+    
+class BarberScheduleExceptionApiTests(APITestCase):
+    def setUp(self):
+        self.User = get_user_model()
+        
+        self.barber_user = self.User.objects.create_user(
+            username="barber",
+            email="barber@example.com",
+            password="testpass123",
+            is_barber=True,
+        )
+        
+    def test_barber_can_create_schedule_exception_returns_201(self):
+        self.client.force_authenticate(user=self.barber_user)
+        
+        payload = {
+            "date": "2026-01-01",
+            "start_time": "10:00:00",
+            "end_time": "15:00:00",
+            "is_day_off": False,
+            "reason": "Test"
+        }
+        
+        url = "/api/barber/exception-schedules/"
+        
+        response = self.client.post(url, payload, format="json")
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["date"], "2026-01-01")
+        self.assertEqual(BarberScheduleException.objects.count(), 1)
