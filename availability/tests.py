@@ -687,3 +687,88 @@ class BarberScheduleExceptionApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["date"], "2026-01-01")
         self.assertEqual(BarberScheduleException.objects.count(), 1)
+        
+    def test_barber_can_get_schedule_exception_returns_200(self):
+        exception1 = BarberScheduleException.objects.create(
+            barber=self.barber_user,
+            date="2026-01-01",
+            start_time="10:00:00",
+            end_time="15:00:00",
+            is_day_off=False,
+            reason="Test",
+        )
+        
+        self.client.force_authenticate(user=self.barber_user)
+        
+        url = "/api/barber/exception-schedules/"
+        
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data[0]["id"], exception1.id)
+        ids = [item["id"] for item in response.data]
+        self.assertIn(exception1.id, ids)
+        
+    def test_barber_can_partial_update_schedule_exception_returns_200(self):
+        exception1 = BarberScheduleException.objects.create(
+            barber=self.barber_user,
+            date="2026-01-01",
+            start_time="10:00:00",
+            end_time="12:00:00",
+            is_day_off=False,
+            reason="Test",
+        )
+        
+        self.client.force_authenticate(user=self.barber_user)
+        
+        payload = {
+            "date": "2026-01-01",
+            "start_time": "10:00:00",
+            "end_time":"15:00:00",
+            "is_day_off": False,
+            "reason": "Test",
+        }
+        
+        url = f"/api/barber/exception-schedules/{exception1.id}/"
+        
+        response = self.client.patch(url, payload, format="json")
+        
+        exception1.refresh_from_db()
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["end_time"], "15:00:00")
+        self.assertEqual(str(exception1.end_time), "15:00:00")
+        
+    def test_barber_can_fully_update_schedule_exception_retuns_200_ok(self):
+        exception1 = BarberScheduleException.objects.create(
+            barber=self.barber_user,
+            date="2026-01-01",
+            start_time="10:00:00",
+            end_time="12:00:00",
+            is_day_off=False,
+            reason="Test",
+        )
+        
+        self.client.force_authenticate(user=self.barber_user)
+        
+        payload = {
+            "date": "2026-01-09",
+            "start_time": None,
+            "end_time": None,
+            "is_day_off": True,
+            "reason": "More",
+        }
+        
+        url = f"/api/barber/exception-schedules/{exception1.id}/"
+        
+        response = self.client.put(url, payload, format="json")
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["is_day_off"])
+        self.assertIsNone(response.data["start_time"])
+        self.assertIsNone(response.data["end_time"])
+        
+        exception1.refresh_from_db()
+        self.assertTrue(exception1.is_day_off)
+        self.assertIsNone(exception1.start_time)
+        self.assertIsNone(exception1.end_time)
