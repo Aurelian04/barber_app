@@ -823,10 +823,12 @@ class BarberScheduleExceptionApiTests(APITestCase):
         
         response = self.client.patch(url, payload, format="json")
         
+        sch_exception1.refresh_from_db()
+        
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(str(sch_exception1.start_time), "10:00:00")
         
-    def test_barber_cannot_delete_another_barbers_schedule_exception_retuns_404(self):
+    def test_barber_cannot_delete_another_barbers_schedule_exception_retruns_404(self):
         sch_exception1 = BarberScheduleException.objects.create(
             barber=self.barber_user2,
             date="2026-01-01",
@@ -864,3 +866,65 @@ class BarberScheduleExceptionApiTests(APITestCase):
         
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertIn("detail", response.data)
+
+    def non_barber_cannot_create_schedule_exception_returns_403(self):
+        user1 = self.User.objects.create_user(
+            username="Marian",
+            email="marian@gmail.com",
+            password="pass9865",
+            is_barber=False,
+        )
+        
+        self.client.force_authentication(user=user1)
+        
+        payload = {
+            "date": "2026-01-01",
+            "start_time": "11:00:00",
+            "end_time": "15:00:00",
+            "is_day_off": False,
+            "reason": "Test",
+        }
+        
+        url = "/api/barber/exception-schedules/"
+        
+        response = self.client.post(url, payload, format="json")
+        
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        
+    def test_staff_can_see_all_schedule_exceptions_returns_200(self):
+        user1 = self.User.objects.create_superuser(
+            username="Marian",
+            email="marian@gmail.com",
+            password="pass9865",
+            is_barber=True,
+        )
+        
+        sch_exception1 = BarberScheduleException.objects.create(
+            barber=self.barber_user,
+            date="2026-01-01",
+            start_time="10:00:00",
+            end_time="12:00:00",
+            is_day_off=False,
+            reason="Test",
+        )
+        
+        sch_exception2 = BarberScheduleException.objects.create(
+            barber=self.barber_user2,
+            date="2026-01-01",
+            start_time="10:00:00",
+            end_time="12:00:00",
+            is_day_off=False,
+            reason="Test",
+        )
+        
+        self.client.force_authenticate(user=user1)
+        
+        url = "/api/barber/exception-schedules/"
+        
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        ids = [item["id"] for item in response.data]
+        self.assertIn(sch_exception1.id, ids)
+        self.assertIn(sch_exception2.id, ids)
