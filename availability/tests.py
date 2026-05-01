@@ -676,15 +676,6 @@ class BarberScheduleExceptionApiTests(APITestCase):
             is_barber=True,
         )
         
-        schedule_exception1 = BarberScheduleException.objects.create(
-            barber=self.barber_user,
-            date="2026-01-01",
-            start_time="10:00:00",
-            end_time="15:00:00",
-            is_day_off=False,
-            reason="Test",
-        )
-        
     def test_barber_can_create_schedule_exception_returns_201(self):
         self.client.force_authenticate(user=self.barber_user)
         
@@ -755,7 +746,7 @@ class BarberScheduleExceptionApiTests(APITestCase):
         self.assertEqual(response.data["end_time"], "15:00:00")
         self.assertEqual(str(exception1.end_time), "15:00:00")
         
-    def test_barber_can_fully_update_schedule_exception_retuns_200(self):
+    def test_barber_can_fully_update_schedule_exception_returns_200(self):
         exception1 = BarberScheduleException.objects.create(
             barber=self.barber_user,
             date="2026-01-01",
@@ -806,17 +797,70 @@ class BarberScheduleExceptionApiTests(APITestCase):
         response = self.client.delete(url)
         
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(BarberScheduleException.objects.filter(id=exception1.id).exists(), False)
+        self.assertFalse(BarberScheduleException.objects.filter(id=exception1.id).exists())
         
-    def test_barber_cannot_create_schedule_exception_for_annother_barber_returns_400(self):
+    def test_barber_cannot_update_another_barbers_schedule_exception_returns_404(self):
+        sch_exception1 = BarberScheduleException.objects.create(
+            barber=self.barber_user2,
+            date="2026-01-01",
+            start_time="10:00:00",
+            end_time="12:00:00",
+            is_day_off=False,
+            reason="Test",
+        )
+        
         self.client.force_authenticate(user=self.barber_user)
         
         payload = {
             "date": "2026-01-01",
-            "start_time": "10:00:00",
-            "end_time":"15:00:00",
+            "start_time": "11:00:00",
+            "end_time": "15:00:00",
             "is_day_off": False,
             "reason": "Test",
         }
         
+        url = f"/api/barber/exception-schedules/{sch_exception1.id}/"
         
+        response = self.client.patch(url, payload, format="json")
+        
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(str(sch_exception1.start_time), "10:00:00")
+        
+    def test_barber_cannot_delete_another_barbers_schedule_exception_retuns_404(self):
+        sch_exception1 = BarberScheduleException.objects.create(
+            barber=self.barber_user2,
+            date="2026-01-01",
+            start_time="10:00:00",
+            end_time="12:00:00",
+            is_day_off=False,
+            reason="Test",
+        )
+        
+        self.client.force_authenticate(user=self.barber_user)
+        
+        url = f"/api/barber/exception-schedules/{sch_exception1.id}/"
+        
+        response = self.client.delete(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(str(sch_exception1.start_time), "10:00:00")
+        self.assertTrue(BarberScheduleException.objects.filter(id=sch_exception1.id).exists())
+        
+    def test_barber_cannot_get_another_barber_schedule_exception_returns_404(self):
+        self.client.force_authenticate(user=self.barber_user)
+        
+        sch_exception1 = BarberScheduleException.objects.create(
+            barber=self.barber_user2,
+            date="2026-01-01",
+            start_time="10:00:00",
+            end_time="12:00:00",
+            is_day_off=False,
+            reason="Test",
+        )
+        
+        url = f"/api/barber/exception-schedules/{sch_exception1.id}/"
+        
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn("detail", response.data)
