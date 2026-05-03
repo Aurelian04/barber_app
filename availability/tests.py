@@ -945,5 +945,4 @@ class BarberScheduleExceptionApiTests(APITestCase):
         response = self.client.post(url, payload, format="json")
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        print(response.data)
-        # self.assertEqual("")
+        self.assertIn("non_field_errors", response.data)

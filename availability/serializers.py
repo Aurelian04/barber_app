@@ -119,4 +119,14 @@ class BarberScheduleExceptionSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         validated_data["barber"] = self.context["request"].user
-        return super().create(validated_data)
+        
+        try:
+            return super().create(validated_data)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(e.message_dict)
+        
+    def update(self, instance, validated_data):
+        try:
+            return super().update(instance, validated_data)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(e.message_dict)
