@@ -867,7 +867,7 @@ class BarberScheduleExceptionApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertIn("detail", response.data)
 
-    def non_barber_cannot_create_schedule_exception_returns_403(self):
+    def test_non_barber_cannot_create_schedule_exception_returns_403(self):
         user1 = self.User.objects.create_user(
             username="Marian",
             email="marian@gmail.com",
@@ -875,7 +875,7 @@ class BarberScheduleExceptionApiTests(APITestCase):
             is_barber=False,
         )
         
-        self.client.force_authentication(user=user1)
+        self.client.force_authenticate(user=user1)
         
         payload = {
             "date": "2026-01-01",
@@ -928,3 +928,22 @@ class BarberScheduleExceptionApiTests(APITestCase):
         ids = [item["id"] for item in response.data]
         self.assertIn(sch_exception1.id, ids)
         self.assertIn(sch_exception2.id, ids)
+        
+    def test_barber_cannot_create_schedule_exception_if_day_off_returns_400(self):
+        self.client.force_authenticate(user=self.barber_user)
+        
+        payload = {
+            "date": "2026-01-01",
+            "start_time": "11:00:00",
+            "end_time": "15:00:00",
+            "is_day_off": True,
+            "reason": "Test",
+        }
+        
+        url = "/api/barber/exception-schedules/"
+        
+        response = self.client.post(url, payload, format="json")
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        print(response.data)
+        # self.assertEqual("")
