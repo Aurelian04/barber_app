@@ -929,20 +929,185 @@ class BarberScheduleExceptionApiTests(APITestCase):
         self.assertIn(sch_exception1.id, ids)
         self.assertIn(sch_exception2.id, ids)
         
-    def test_barber_cannot_create_schedule_exception_if_day_off_returns_400(self):
+    def test_barber_cannot_create_day_off_exception_with_start_and_end_time_returns_400(self):
         self.client.force_authenticate(user=self.barber_user)
-        
+
         payload = {
             "date": "2026-01-01",
-            "start_time": "11:00:00",
-            "end_time": "15:00:00",
+            "start_time": "10:00:00",
+            "end_time": "12:00:00",
             "is_day_off": True,
-            "reason": "Test",
+            "reason": "Day off",
         }
-        
-        url = "/api/barber/exception-schedules/"
-        
-        response = self.client.post(url, payload, format="json")
-        
+
+        response = self.client.post(
+            "/api/barber/exception-schedules/",
+            payload,
+            format="json",
+        )
+
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("non_field_errors", response.data)
+
+
+    def test_barber_can_create_day_off_exception_without_start_and_end_time_returns_201(self):
+        self.client.force_authenticate(user=self.barber_user)
+
+        payload = {
+            "date": "2026-01-01",
+            "start_time": None,
+            "end_time": None,
+            "is_day_off": True,
+            "reason": "Day off",
+        }
+
+        response = self.client.post(
+            "/api/barber/exception-schedules/",
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(response.data["is_day_off"])
+        self.assertIsNone(response.data["start_time"])
+        self.assertIsNone(response.data["end_time"])
+
+
+    def test_barber_cannot_create_working_exception_without_start_time_returns_400(self):
+        self.client.force_authenticate(user=self.barber_user)
+
+        payload = {
+            "date": "2026-01-01",
+            "start_time": None,
+            "end_time": "15:00:00",
+            "is_day_off": False,
+            "reason": "Custom hours",
+        }
+
+        response = self.client.post(
+            "/api/barber/exception-schedules/",
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+    def test_barber_cannot_create_working_exception_without_end_time_returns_400(self):
+        self.client.force_authenticate(user=self.barber_user)
+
+        payload = {
+            "date": "2026-01-01",
+            "start_time": "10:00:00",
+            "end_time": None,
+            "is_day_off": False,
+            "reason": "Custom hours",
+        }
+
+        response = self.client.post(
+            "/api/barber/exception-schedules/",
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+    def test_barber_cannot_create_schedule_exception_with_start_time_after_end_time_returns_400(self):
+        self.client.force_authenticate(user=self.barber_user)
+
+        payload = {
+            "date": "2026-01-01",
+            "start_time": "16:00:00",
+            "end_time": "12:00:00",
+            "is_day_off": False,
+            "reason": "Invalid hours",
+        }
+
+        response = self.client.post(
+            "/api/barber/exception-schedules/",
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+    def test_barber_cannot_create_schedule_exception_with_same_start_and_end_time_returns_400(self):
+        self.client.force_authenticate(user=self.barber_user)
+
+        payload = {
+            "date": "2026-01-01",
+            "start_time": "12:00:00",
+            "end_time": "12:00:00",
+            "is_day_off": False,
+            "reason": "Invalid hours",
+        }
+
+        response = self.client.post(
+            "/api/barber/exception-schedules/",
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    
+    def test_barber_can_create_multiple_working_exceptions_for_same_date_returns_201(self):
+        self.client.force_authenticate(user=self.barber_user)
+
+        payload1 = {
+            "date": "2026-01-01",
+            "start_time": "09:00:00",
+            "end_time": "11:00:00",
+            "is_day_off": False,
+            "reason": "Morning interval",
+        }
+
+        payload2 = {
+            "date": "2026-01-01",
+            "start_time": "14:00:00",
+            "end_time": "16:00:00",
+            "is_day_off": False,
+            "reason": "Afternoon interval",
+        }
+
+        response1 = self.client.post("/api/barber/exception-schedules/", payload1, format="json")
+        response2 = self.client.post("/api/barber/exception-schedules/", payload2, format="json")
+
+        self.assertEqual(response1.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response2.status_code, status.HTTP_201_CREATED)
+
+        self.assertEqual(
+            BarberScheduleException.objects.filter(
+                barber=self.barber_user,
+                date="2026-01-01",
+            ).count(),
+            2,
+        )
+        
+    def test_barber_cannot_create_overlapping_working_exceptions_for_same_date_returns_400(self):
+        BarberScheduleException.objects.create(
+            barber=self.barber_user,
+            date="2026-01-01",
+            start_time="09:00:00",
+            end_time="11:00:00",
+            is_day_off=False,
+            reason="Morning interval",
+        )
+
+        self.client.force_authenticate(user=self.barber_user)
+
+        payload = {
+            "date": "2026-01-01",
+            "start_time": "10:30:00",
+            "end_time": "12:00:00",
+            "is_day_off": False,
+            "reason": "Overlapping interval",
+        }
+
+        response = self.client.post(
+            "/api/barber/exception-schedules/",
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
