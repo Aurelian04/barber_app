@@ -48,7 +48,7 @@ def get_barber_working_intervals_for_date(barber, date):
         lunch = weekly_schedule.lunch_break
         
         intervals = [
-            (weekly_schedule.start_time, weekly_schedule.end_time),
+            (weekly_schedule.start_time, lunch.start_time),
             (lunch.end_time, weekly_schedule.end_time),
         ]
         

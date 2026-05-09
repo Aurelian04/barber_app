@@ -1111,3 +1111,69 @@ class BarberScheduleExceptionApiTests(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        
+        
+from datetime import date, time
+
+from .program_formula import get_barber_working_intervals_for_date
+
+
+class BarberWorkingIntervalTests(APITestCase):
+    def setUp(self):
+        self.User = get_user_model()
+        
+        self.barber_user = self.User.objects.create_user(
+            username="barber",
+            email="barber@example.com",
+            password="testpass123",
+            is_barber=True,
+        )
+        
+    def test_returns_weekly_schedule_intervals_when_no_exception_exists(self):
+        BarberWeeklySchedule.objects.create(
+            barber=self.barber_user,
+            weekday=4,
+            start_time="09:00:00",
+            end_time="17:00:00",
+            is_active=True,
+        )
+        
+        intervals = get_barber_working_intervals_for_date(
+            self.barber_user,
+            date(2026, 1, 1),
+        )
+        
+        self.assertEqual(
+            intervals,
+            [
+                (time(9, 0), time(17, 0)),
+            ],
+        )
+        
+    def test_returns_split_intervals_when_lunch_break_exists(self):
+        weekly_schedule = BarberWeeklySchedule.objects.create(
+            barber=self.barber_user,
+            weekday=4,
+            start_time="09:00:00",
+            end_time="17:00:00",
+            is_active=True,
+        )
+
+        LunchBreak.objects.create(
+            weekly_schedule=weekly_schedule,
+            start_time="12:00:00",
+            end_time="13:00:00",
+        )
+        
+        intervals = get_barber_working_intervals_for_date(
+            self.barber_user,
+            date(2026, 1, 1),
+        )
+        
+        self.assertEqual(
+            intervals,
+            [
+                (time(9, 0), time(12, 0)),
+                (time(13, 0), time(17, 0)),
+            ],
+        )
