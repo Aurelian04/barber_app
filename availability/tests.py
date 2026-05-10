@@ -1177,3 +1177,28 @@ class BarberWorkingIntervalTests(APITestCase):
                 (time(13, 0), time(17, 0)),
             ],
         )
+        
+    def test_if_day_off_returns_nothing(self):
+        weekly_schedule = BarberWeeklySchedule.objects.create(
+            barber=self.barber_user,
+            weekday=4,
+            start_time="09:00:00",
+            end_time="17:00:00",
+            is_active=True
+        )
+        
+        BarberScheduleException.objects.create(
+            barber=self.barber_user,
+            date=date(2026, 1, 1),
+            start_time=None,
+            end_time=None,
+            is_day_off=True,
+            reason="Test",
+        )
+        
+        intervals = get_barber_working_intervals_for_date(
+            barber=self.barber_user,
+            date=date(2026, 1, 1)
+        )
+        
+        self.assertEqual(intervals, [])
