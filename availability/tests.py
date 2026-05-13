@@ -1202,3 +1202,95 @@ class BarberWorkingIntervalTests(APITestCase):
         )
         
         self.assertEqual(intervals, [])
+        
+    def test_working_exceptions_exists_returns_intervals(self):
+        weekly_schedule = BarberWeeklySchedule.objects.create(
+            barber=self.barber_user,
+            weekday=4,
+            start_time="09:00:00",
+            end_time="17:00:00",
+            is_active=True
+        )
+        
+        BarberScheduleException.objects.create(
+            barber=self.barber_user,
+            date=date(2026, 1, 1),
+            start_time="8:00:00",
+            end_time="11:30:00",
+            is_day_off=False,
+            reason="Test",
+        )
+        
+        BarberScheduleException.objects.create(
+            barber=self.barber_user,
+            date=date(2026, 1, 1),
+            start_time="12:00:00",
+            end_time="17:30:00",
+            is_day_off=False,
+            reason="Test2",
+        )
+        
+        intervals = get_barber_working_intervals_for_date(
+            barber=self.barber_user,
+            date=date(2026, 1, 1),
+        )
+        
+        self.assertEqual(
+            intervals,
+            [
+                (time(8, 0), time(11, 30)),
+                (time(12, 0), time(17, 30)),
+            ],
+        )
+        
+    def test_exception_overrides_weekly_schedule_and_lunch_break_returns_exception(self):
+        weekly_schedule = BarberWeeklySchedule.objects.create(
+            barber=self.barber_user,
+            weekday=4,
+            start_time="09:00:00",
+            end_time="17:00:00",
+            is_active=True
+        )
+        
+        BarberScheduleException.objects.create(
+            barber=self.barber_user,
+            date=date(2026, 1, 1),
+            start_time="8:00:00",
+            end_time="11:30:00",
+            is_day_off=False,
+            reason="Test",
+        )
+        
+        LunchBreak.objects.create(
+            weekly_schedule=weekly_schedule,
+            start_time="12:00:00",
+            end_time="13:00:00",
+        )
+        
+        intervals = get_barber_working_intervals_for_date(
+            barber=self.barber_user,
+            date=date(2026, 1, 1),
+        )
+        
+        self.assertEqual(
+            intervals,
+            [
+                (time(8, 0), time(11, 30)),
+            ]
+        )
+        
+    def test_weekly_schedule_is_active_false_returns_nothing(self):
+        BarberWeeklySchedule.objects.create(
+            barber=self.barber_user,
+            weekday=4,
+            start_time="09:00:00",
+            end_time="17:00:00",
+            is_active=False
+        )
+        
+        intervals = get_barber_working_intervals_for_date(
+            barber=self.barber_user,
+            date=date(2026, 1, 1),
+        )
+        
+        self.assertEqual(intervals, [])
