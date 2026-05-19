@@ -68,3 +68,9 @@ def get_available_slots_for_date(barber, date, service):
         barber=barber,
         start_time__date=date,
     )
+    
+    occupied_intervals = []
+    for appointment in booked_appointments:
+        occupied_intervals.append(
+            (appointment.start_time, appointment.end_time)
+            )
