@@ -1,5 +1,8 @@
 from .models import BarberWeeklySchedule, BarberScheduleException
 
+from appointments.models import Appointment
+from services.models import Service
+
 def get_barber_working_intervals_for_date(barber, date):
     """
     Returns working intervals for a barber in a day.
@@ -53,3 +56,15 @@ def get_barber_working_intervals_for_date(barber, date):
         ]
         
     return intervals
+
+
+def get_available_slots_for_date(barber, date, service):
+    working_intervals = get_barber_working_intervals_for_date(barber, date)
+    
+    service_duration = service.duration_minutes
+    
+    booked_appointments = Appointment.objects.filter(
+        status=Appointment.Status.BOOKED,
+        barber=barber,
+        start_time__date=date,
+    )
