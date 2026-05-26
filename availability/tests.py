@@ -1113,9 +1113,11 @@ class BarberScheduleExceptionApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         
         
-from datetime import date, time
+from datetime import date, time, datetime
 
-from .program_formula import get_barber_working_intervals_for_date
+from .program_formula import get_barber_working_intervals_for_date, get_available_slots_for_date
+
+from services.models import Service
 
 
 class BarberWorkingIntervalTests(APITestCase):
@@ -1294,3 +1296,45 @@ class BarberWorkingIntervalTests(APITestCase):
         )
         
         self.assertEqual(intervals, [])
+        
+class AvailableSlotsForDateTests(APITestCase):
+    def setUp(self):
+        self.User = get_user_model()
+    
+        self.barber_user = self.User.objects.create_user(
+            username="barber1",
+            email="barber@gmail.com",
+            password="barber9980",
+            is_barber=True,
+        )
+        
+    def test_generates_slots_when_no_appointments_exist(self):
+        BarberWeeklySchedule.objects.create(
+            barber=self.barber_user,
+            weekday=4,
+            start_time="09:00:00",
+            end_time="10:00:00",
+            is_active=True,
+        )
+        
+        service = Service.objects.create(
+            barber=self.barber_user,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        available_slot = get_available_slots_for_date(
+            self.barber_user,
+            date(2026, 1, 1),
+            service,
+        )
+        
+        self.assertEqual(
+            available_slot,
+            [
+                datetime(2026, 1, 1, 9, 0),
+                datetime(2026, 1, 1, 9, 15),
+                datetime(2026, 1, 1, 9, 30),
+            ],
+        )
