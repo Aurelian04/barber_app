@@ -1119,6 +1119,10 @@ from .program_formula import get_barber_working_intervals_for_date, get_availabl
 
 from services.models import Service
 
+from appointments.models import Appointment
+
+from django.utils import timezone
+
 
 class BarberWorkingIntervalTests(APITestCase):
     def setUp(self):
@@ -1338,3 +1342,65 @@ class AvailableSlotsForDateTests(APITestCase):
                 datetime(2026, 1, 1, 9, 30),
             ],
         )
+        
+    def test_slots_not_generate_outside_program(self):
+        BarberWeeklySchedule.objects.create(
+            barber=self.barber_user,
+            weekday=4,
+            start_time="09:00:00",
+            end_time="09:20:00",
+            is_active=True,
+        )
+        
+        service = Service.objects.create(
+            barber=self.barber_user,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        available_slot = get_available_slots_for_date(
+            self.barber_user,
+            date(2026, 1, 1),
+            service,
+        )
+        
+        self.assertEqual(available_slot, [])
+        
+    def test_appointment_blocks_slot_overlay(self):
+        BarberWeeklySchedule.objects.create(
+            barber=self.barber_user,
+            weekday=4,
+            start_time="09:00:00",
+            end_time="10:00:00",
+            is_active=True,
+        )
+        
+        service = Service.objects.create(
+            barber=self.barber_user,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        client1 = self.User.objects.create_user(
+            username="client1",
+            email="client1@example.com",
+            password="testpass123",
+        )
+        
+        appointment = Appointment.objects.create(
+            barber=self.barber_user,
+            client=client1,
+            service=service,
+            start_time=datetime(2026, 1, 1, 9, 15),
+            end_time=datetime(2026, 1, 1, 9, 45),
+        )
+        
+        availability = get_available_slots_for_date(
+            self.barber_user,
+            date(2026, 1, 1),
+            service
+        )
+        
+        self.assertEqual(availability, [])
