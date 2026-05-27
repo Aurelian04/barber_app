@@ -1337,9 +1337,9 @@ class AvailableSlotsForDateTests(APITestCase):
         self.assertEqual(
             available_slot,
             [
-                datetime(2026, 1, 1, 9, 0),
-                datetime(2026, 1, 1, 9, 15),
-                datetime(2026, 1, 1, 9, 30),
+                timezone.make_aware(datetime(2026, 1, 1, 9, 0)),
+                timezone.make_aware(datetime(2026, 1, 1, 9, 15)),
+                timezone.make_aware(datetime(2026, 1, 1, 9, 30)),
             ],
         )
         
@@ -1393,8 +1393,8 @@ class AvailableSlotsForDateTests(APITestCase):
             barber=self.barber_user,
             client=client1,
             service=service,
-            start_time=datetime(2026, 1, 1, 9, 15),
-            end_time=datetime(2026, 1, 1, 9, 45),
+            start_time=timezone.make_aware(datetime(2026, 1, 1, 9, 15)),
+            end_time=timezone.make_aware(datetime(2026, 1, 1, 9, 45)),
         )
         
         availability = get_available_slots_for_date(

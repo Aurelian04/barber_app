@@ -5,6 +5,8 @@ from services.models import Service
 
 from datetime import datetime, timedelta
 
+from django.utils import timezone
+
 def get_barber_working_intervals_for_date(barber, date):
     """
     Returns working intervals for a barber in a day.
@@ -82,13 +84,17 @@ def get_available_slots_for_date(barber, date, service):
     for interval_start, interval_end in working_intervals:
         current_slot_start = interval_start
     
-        current_slot_start_datetime = datetime.combine(date, current_slot_start)
+        current_slot_start_datetime = timezone.make_aware(
+            datetime.combine(date, current_slot_start)
+        )
         
         current_slot_end_datetime = current_slot_start_datetime + timedelta(
             minutes=service_duration
         )
         
-        interval_end_datetime = datetime.combine(date, interval_end)
+        interval_end_datetime = timezone.make_aware(
+            datetime.combine(date, interval_end)
+        )
         
         
         while current_slot_end_datetime <= interval_end_datetime:
