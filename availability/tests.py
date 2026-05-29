@@ -1404,3 +1404,50 @@ class AvailableSlotsForDateTests(APITestCase):
         )
         
         self.assertEqual(availability, [])
+        
+    def test_cancelled_appointment_doesnt_block_slot(self):
+        BarberWeeklySchedule.objects.create(
+            barber=self.barber_user,
+            weekday=4,
+            start_time="09:00:00",
+            end_time="10:00:00",
+            is_active=True,
+        )
+        
+        service = Service.objects.create(
+            barber=self.barber_user,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        client1 = self.User.objects.create_user(
+            username="client1",
+            email="client1@example.com",
+            password="testpass123",
+        )
+        
+        appointment = Appointment.objects.create(
+            barber=self.barber_user,
+            client=client1,
+            service=service,
+            start_time=timezone.make_aware(datetime(2026, 1, 1, 9, 15)),
+            end_time=timezone.make_aware(datetime(2026, 1, 1, 9, 45)),
+            status=Appointment.Status.CANCELLED,
+            notes="Test",
+        )
+        
+        availability = get_available_slots_for_date(
+            self.barber_user,
+            date(2026, 1, 1),
+            service,
+        )
+        
+        self.assertEqual(
+            availability,
+            [
+                timezone.make_aware(datetime(2026, 1, 1, 9, 0)),
+                timezone.make_aware(datetime(2026, 1, 1, 9, 15)),
+                timezone.make_aware(datetime(2026, 1, 1, 9, 30)),
+            ]
+        )
