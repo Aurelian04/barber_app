@@ -1451,3 +1451,246 @@ class AvailableSlotsForDateTests(APITestCase):
                 timezone.make_aware(datetime(2026, 1, 1, 9, 30)),
             ]
         )
+        
+    def test_lunch_break_break_slots(self):
+        schedule = BarberWeeklySchedule.objects.create(
+            barber=self.barber_user,
+            weekday=4,
+            start_time="09:00:00",
+            end_time="11:00:00",
+            is_active=True,
+        )
+        
+        service = Service.objects.create(
+            barber=self.barber_user,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        LunchBreak.objects.create(
+            weekly_schedule=schedule,
+            start_time="10:00:00",
+            end_time="10:30:00",
+        )
+        
+        availability = get_available_slots_for_date(
+            self.barber_user,
+            date(2026, 1, 1),
+            service
+        )
+        
+        self.assertEqual(
+            availability,
+            [
+                timezone.make_aware(datetime(2026, 1 , 1, 9, 0)),
+                timezone.make_aware(datetime(2026, 1 , 1, 9, 15)),
+                timezone.make_aware(datetime(2026, 1 , 1, 9, 30)),
+                timezone.make_aware(datetime(2026, 1 , 1, 10, 30)),
+            ]
+        )
+        
+    def test_day_off_returns_empty_list(self):
+        BarberWeeklySchedule.objects.create(
+            barber=self.barber_user,
+            weekday=4,
+            start_time="09:00:00",
+            end_time="11:00:00",
+            is_active=True,
+        )
+        
+        service = Service.objects.create(
+            barber=self.barber_user,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        BarberScheduleException.objects.create(
+            barber=self.barber_user,
+            date=date(2026, 1, 1),
+            start_time=None,
+            end_time=None,
+            is_day_off=True,
+            reason="Test",
+        )
+        
+        availability = get_available_slots_for_date(
+            self.barber_user,
+            date(2026, 1, 1),
+            service,
+        )
+        
+        self.assertEqual(availability, [])
+        
+    def test_working_exception_returns_correct_slots(self):
+        BarberWeeklySchedule.objects.create(
+            barber=self.barber_user,
+            weekday=4,
+            start_time="09:00:00",
+            end_time="11:00:00",
+            is_active=True,
+        )
+        
+        service = Service.objects.create(
+            barber=self.barber_user,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        BarberScheduleException.objects.create(
+            barber=self.barber_user,
+            date=date(2026, 1, 1),
+            start_time="09:00:00",
+            end_time="10:00:00",
+            is_day_off=False,
+            reason="Test",
+        )
+        
+        BarberScheduleException.objects.create(
+            barber=self.barber_user,
+            date=date(2026, 1, 1),
+            start_time="13:00:00",
+            end_time="14:00:00",
+            is_day_off=False,
+            reason="Test",
+        )
+        
+        availability = get_available_slots_for_date(
+            self.barber_user,
+            date(2026, 1, 1),
+            service,
+        )
+        
+        self.assertEqual(
+            availability,
+            [
+                timezone.make_aware(datetime(2026, 1, 1, 9, 0)),
+                timezone.make_aware(datetime(2026, 1, 1, 9, 15)),
+                timezone.make_aware(datetime(2026, 1, 1, 9, 30)),
+                timezone.make_aware(datetime(2026, 1, 1, 13, 0)),
+                timezone.make_aware(datetime(2026, 1, 1, 13, 15)),
+                timezone.make_aware(datetime(2026, 1, 1, 13, 30)),
+            ]
+        )
+        
+    def test_45_minutes_service_works_correct(self):
+        BarberWeeklySchedule.objects.create(
+            barber=self.barber_user,
+            weekday=4,
+            start_time="09:00:00",
+            end_time="11:00:00",
+            is_active=True,
+        )
+        
+        service = Service.objects.create(
+            barber=self.barber_user,
+            name="Tuns",
+            duration_minutes=45,
+            price="50.00",
+        )
+        
+        availability = get_available_slots_for_date(
+            self.barber_user,
+            date(2026, 1, 1),
+            service,
+        )
+        
+        self.assertEqual(
+            availability,
+            [
+                timezone.make_aware(datetime(2026, 1, 1, 9, 0)),
+                timezone.make_aware(datetime(2026, 1, 1, 9, 15)),
+                timezone.make_aware(datetime(2026, 1, 1, 9, 30)),
+                timezone.make_aware(datetime(2026, 1, 1, 9, 45)),
+                timezone.make_aware(datetime(2026, 1, 1, 10, 0)),
+                timezone.make_aware(datetime(2026, 1, 1, 10, 15)),
+            ]
+        )
+        
+    def test_more_appointments_block_slots_correct(self):
+        BarberWeeklySchedule.objects.create(
+            barber=self.barber_user,
+            weekday=4,
+            start_time="09:00:00",
+            end_time="11:00:00",
+            is_active=True,
+        )
+        
+        service = Service.objects.create(
+            barber=self.barber_user,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        client1 = self.User.objects.create_user(
+            username="client1",
+            email="client1@example.com",
+            password="testpass123",
+        )
+        
+        client2 = self.User.objects.create_user(
+            username="client2",
+            email="client2@example.com",
+            password="testpass1234",
+        )
+        
+        appointment1 = Appointment.objects.create(
+            barber=self.barber_user,
+            client=client1,
+            service=service,
+            start_time=timezone.make_aware(datetime(2026, 1, 1, 9, 0)),
+            end_time=timezone.make_aware(datetime(2026, 1, 1, 9, 30)),
+            status=Appointment.Status.BOOKED,
+            notes="Test",
+        )
+        
+        appointment2 = Appointment.objects.create(
+            barber=self.barber_user,
+            client=client2,
+            service=service,
+            start_time=timezone.make_aware(datetime(2026, 1, 1, 10, 0)),
+            end_time=timezone.make_aware(datetime(2026, 1, 1, 10, 30)),
+            status=Appointment.Status.BOOKED,
+            notes="Test",
+        )
+        
+        availability = get_available_slots_for_date(
+            self.barber_user,
+            date(2026, 1, 1),
+            service,
+        )
+        
+        self.assertEqual(
+            availability,
+            [
+                timezone.make_aware(datetime(2026, 1, 1, 9, 30)),
+                timezone.make_aware(datetime(2026, 1, 1, 10, 30)),
+            ]
+        )
+        
+    def test_weekly_schedule_is_active_false_returns_empty_list(self):
+        BarberWeeklySchedule.objects.create(
+            barber=self.barber_user,
+            weekday=4,
+            start_time="09:00:00",
+            end_time="11:00:00",
+            is_active=False,
+        )
+        
+        service = Service.objects.create(
+            barber=self.barber_user,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        availability = get_available_slots_for_date(
+            self.barber_user,
+            date(2026, 1, 1),
+            service,
+        )
+        
+        self.assertEqual(availability, [])
