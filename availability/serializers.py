@@ -130,3 +130,7 @@ class BarberScheduleExceptionSerializer(serializers.ModelSerializer):
             return super().update(instance, validated_data)
         except DjangoValidationError as e:
             raise serializers.ValidationError(e.message_dict)
+        
+        
+class AvailableSlotsSerializer():
+    pass
