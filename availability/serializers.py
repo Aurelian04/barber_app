@@ -132,5 +132,7 @@ class BarberScheduleExceptionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(e.message_dict)
         
         
-class AvailableSlotsSerializer():
-    pass
+class AvailableSlotsSerializer(serializers.Serializer):
+    barber = serializers.PrimaryKeyRelatedField(),
+    date = serializers.DateField(),
+    service = serializers.PrimaryKeyRelatedField()
