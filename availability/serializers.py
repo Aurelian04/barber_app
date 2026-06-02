@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
+from django.utils import timezone
 
 from .models import BarberWeeklySchedule, LunchBreak, BarberScheduleException 
 
@@ -135,4 +136,21 @@ class BarberScheduleExceptionSerializer(serializers.ModelSerializer):
 class AvailableSlotsSerializer(serializers.Serializer):
     barber = serializers.PrimaryKeyRelatedField(),
     date = serializers.DateField(),
-    service = serializers.PrimaryKeyRelatedField()
+    service = serializers.PrimaryKeyRelatedField(),
+    
+    def validate(self, attrs):
+        barber = attrs["barber"]
+        service = attrs["service"]
+        request_date = attrs["date"]
+        today = timezone.localdate()
+        
+        if not barber.is_barber:
+            raise serializers.ValidationError({"barber": "Selected user must be a barber."})
+        
+        if not service.barber.id == barber.id:
+            raise serializers.ValidationError({"service": "Service dose not belong to this barber."})
+        
+        if request_date < today:
+            raise serializers.ValidationError({"date": "Date can't be in past."})
+        
+        return attrs
