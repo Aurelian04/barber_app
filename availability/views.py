@@ -1,6 +1,9 @@
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.views import APIView
+from rest_framework import permissions
+from rest_framework import request
 
-from .serializers import BarberWeeklyScheduleSerializer, LunchBreakSerializer, BarberScheduleExceptionSerializer
+from .serializers import BarberWeeklyScheduleSerializer, LunchBreakSerializer, BarberScheduleExceptionSerializer, AvailableSlotsSerializer
 from.permissions import IsBarberOrStaff
 from .models import BarberWeeklySchedule, BarberScheduleException, LunchBreak
 
@@ -40,3 +43,15 @@ class LunchBreakViewSet(ModelViewSet):
             return LunchBreak.objects.all()
 
         return LunchBreak.objects.filter(weekly_schedule__barber=user)
+    
+
+class AvailableSlotsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+        
+        serializer = AvailableSlotsSerializer(
+            data=request.query_params
+        )
+        
+        serializer.is_valid(raise_exception=True)
