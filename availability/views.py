@@ -55,3 +55,8 @@ class AvailableSlotsView(APIView):
         )
         
         serializer.is_valid(raise_exception=True)
+        
+        barber = serializer.validated_data["barber"]
+        service = serializer.validated_data["service"]
+        date = serializer.validated_data["date"]
+        
