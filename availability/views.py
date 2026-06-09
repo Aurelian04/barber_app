@@ -1,11 +1,12 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
 from rest_framework import permissions
-from rest_framework import request
+from rest_framework.response import Response
 
 from .serializers import BarberWeeklyScheduleSerializer, LunchBreakSerializer, BarberScheduleExceptionSerializer, AvailableSlotsSerializer
 from.permissions import IsBarberOrStaff
 from .models import BarberWeeklySchedule, BarberScheduleException, LunchBreak
+from .program_formula import get_available_slots_for_date
 
 
 class BarberWeeklyScheduleViewSet(ModelViewSet):
@@ -60,3 +61,12 @@ class AvailableSlotsView(APIView):
         service = serializer.validated_data["service"]
         date = serializer.validated_data["date"]
         
+        slots = get_available_slots_for_date(
+            barber,
+            date,
+            service,
+        )
+        
+        slots_data = [slot.isoformat() for slot in slots]
+        
+        return Response({"slots": slots_data})
