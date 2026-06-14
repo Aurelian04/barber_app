@@ -8,6 +8,8 @@ from rest_framework.test import APITestCase
 
 from .models import BarberWeeklySchedule, LunchBreak, BarberScheduleException
 
+from .serializers import AvailableSlotsSerializer
+
 class BarberWeeklyScheduleApiTests(APITestCase):
     def setUp(self):
         self.User = get_user_model()
@@ -1694,3 +1696,39 @@ class AvailableSlotsForDateTests(APITestCase):
         )
         
         self.assertEqual(availability, [])
+        
+        
+class AvailableSlotsSerializerTests(APITestCase):
+    def setUp(self):
+        self.User = get_user_model()
+    
+        self.barber_user = self.User.objects.create_user(
+            username="barber1",
+            email="barber@gmail.com",
+            password="barber9980",
+            is_barber=True,
+        )
+        
+        self.client1 = self.User.objects.create_user(
+            username="client1",
+            email="client1@example.com",
+            password="testpass123",
+        )
+        
+    def test_valid_data_is_valid(self):
+        service = Service.objects.create(
+            barber=self.barber_user,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+
+        data = {
+            "barber": self.barber_user.id,
+            "service": service.id,
+            "date": "2026-12-01",
+        }
+
+        serializer = AvailableSlotsSerializer(data=data)
+
+        self.assertTrue(serializer.is_valid())

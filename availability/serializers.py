@@ -4,7 +4,8 @@ from django.utils import timezone
 
 from .models import BarberWeeklySchedule, LunchBreak, BarberScheduleException 
 
-
+from services.models import Service
+from django.contrib.auth import get_user_model
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
@@ -134,9 +135,9 @@ class BarberScheduleExceptionSerializer(serializers.ModelSerializer):
         
         
 class AvailableSlotsSerializer(serializers.Serializer):
-    barber = serializers.PrimaryKeyRelatedField(),
-    date = serializers.DateField(),
-    service = serializers.PrimaryKeyRelatedField(),
+    barber = serializers.PrimaryKeyRelatedField(queryset=get_user_model().objects.all())
+    date = serializers.DateField()
+    service = serializers.PrimaryKeyRelatedField(queryset=Service.objects.all())
     
     def validate(self, attrs):
         barber = attrs["barber"]
