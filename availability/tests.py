@@ -1732,3 +1732,27 @@ class AvailableSlotsSerializerTests(APITestCase):
         serializer = AvailableSlotsSerializer(data=data)
 
         self.assertTrue(serializer.is_valid())
+        
+    def test_user_is_not_barber(self):
+        fake_barber = self.User.objects.create_user(
+            username="fake",
+            email="fake@example.com",
+            password="testpass123fake",
+        )
+        
+        service = Service.objects.create(
+            barber=fake_barber,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        data = {
+            "barber": fake_barber.id,
+            "service": service.id,
+            "date": "2026-12-01",
+        }
+        
+        serializer = AvailableSlotsSerializer(data=data)
+        
+        
