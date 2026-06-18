@@ -1738,6 +1738,7 @@ class AvailableSlotsSerializerTests(APITestCase):
             username="fake",
             email="fake@example.com",
             password="testpass123fake",
+            is_barber=False,
         )
         
         service = Service.objects.create(
@@ -1755,4 +1756,10 @@ class AvailableSlotsSerializerTests(APITestCase):
         
         serializer = AvailableSlotsSerializer(data=data)
         
+        is_valid = serializer.is_valid()
         
+        self.assertFalse(is_valid)
+        self.assertEqual(serializer.errors["barber"][0], "Selected user must be a barber.")
+        
+    def test_service_owned_by_another_barber(self):
+        pass
