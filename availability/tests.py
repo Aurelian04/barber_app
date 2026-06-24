@@ -1762,4 +1762,70 @@ class AvailableSlotsSerializerTests(APITestCase):
         self.assertEqual(serializer.errors["barber"][0], "Selected user must be a barber.")
         
     def test_service_owned_by_another_barber(self):
-        pass
+        barber_2 = self.User.objects.create_user(
+            username="fake",
+            email="fake@example.com",
+            password="testpass123fake",
+            is_barber=True,
+        )
+        
+        service = Service.objects.create(
+            barber=barber_2,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        data = {
+            "barber": self.barber_user.id,
+            "service": service.id,
+            "date": "2026-12-01",
+        }
+        
+        serializer = AvailableSlotsSerializer(data=data)
+        
+        is_valid = serializer.is_valid()
+        
+        self.assertFalse(is_valid)
+        self.assertIn("service", serializer.errors)
+        
+    def test_date_in_past(self):
+        service = Service.objects.create(
+            barber=self.barber_user,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        data = {
+            "barber": self.barber_user.id,
+            "service": service.id,
+            "date": "2026-01-01",
+        }
+        
+        serializer = AvailableSlotsSerializer(data=data)
+        
+        is_valid = serializer.is_valid()
+        
+        self.assertFalse(is_valid)
+        self.assertIn("date", serializer.errors)
+        
+    def test_no_barber(self):
+        service = Service.objects.create(
+            barber=self.barber_user,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        data = {
+            "service": service.id,
+            "date": "2026-12-01",
+        }
+        
+        serializer = AvailableSlotsSerializer(data=data)
+        
+        is_valid = serializer.is_valid()
+        
+        self.assertFalse(is_valid)
+        self.assertIn("barber", serializer.errors)
