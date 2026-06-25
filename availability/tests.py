@@ -1829,3 +1829,71 @@ class AvailableSlotsSerializerTests(APITestCase):
         
         self.assertFalse(is_valid)
         self.assertIn("barber", serializer.errors)
+        
+    def test_no_service(self):
+        data = {
+            "barber": self.barber_user.id,
+            "date": "2026-12-01",
+        }
+        
+        serializer = AvailableSlotsSerializer(data=data)
+        
+        is_valid = serializer.is_valid()
+        
+        self.assertFalse(is_valid)
+        self.assertIn("service", serializer.errors)
+        
+    def test_no_date(self):
+        service = Service.objects.create(
+            barber=self.barber_user,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        data = {
+            "barber": self.barber_user.id,
+            "service": service.id,
+        }
+        
+        serializer = AvailableSlotsSerializer(data=data)
+        
+        is_valid = serializer.is_valid()
+        
+        self.assertFalse(is_valid)
+        self.assertIn("date", serializer.errors)
+        
+    def test_invalid_barber_id(self):
+        service = Service.objects.create(
+            barber=self.barber_user,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        data = {
+            "barber": 999,
+            "service": service.id,
+            "date": "2026-12-01"
+        }
+        
+        serializer = AvailableSlotsSerializer(data=data)
+        
+        is_valid = serializer.is_valid()
+        
+        self.assertFalse(is_valid)
+        self.assertIn("barber", serializer.errors)
+        
+    def test_invalid_service_id(self):
+        data = {
+            "barber": self.barber_user.id,
+            "service": 999,
+            "date": "2026-12-01"
+        }
+        
+        serializer = AvailableSlotsSerializer(data=data)
+        
+        is_valid = serializer.is_valid()
+        
+        self.assertFalse(is_valid)
+        self.assertIn("service", serializer.errors)
