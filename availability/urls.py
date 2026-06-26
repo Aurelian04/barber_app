@@ -6,7 +6,7 @@ from .views import BarberWeeklyScheduleViewSet, LunchBreakViewSet, BarberSchedul
 router = DefaultRouter()
 router.register(r"barber/weekly-schedules", BarberWeeklyScheduleViewSet, basename="weekly-schedule")
 router.register(r"barber/lunch-breaks", LunchBreakViewSet, basename="barber-lunch")
-router.register(r"barber/exception-schedules", BarberScheduleExceptionViewSet, basename="keekly-exception")
+router.register(r"barber/exception-schedules", BarberScheduleExceptionViewSet, basename="weekly-exception")
 
 urlpatterns = [
     path("barber/available-slots/", AvailableSlotsView.as_view()),
