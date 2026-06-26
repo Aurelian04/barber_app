@@ -1897,3 +1897,60 @@ class AvailableSlotsSerializerTests(APITestCase):
         
         self.assertFalse(is_valid)
         self.assertIn("service", serializer.errors)
+        
+class AvailableSlotsViewTests(APITestCase):
+    def setUp(self):
+        self.User = get_user_model()
+        
+        self.barber_user = self.User.objects.create_user(
+            username="barber1",
+            email="barber@gmail.com",
+            password="barber9980",
+            is_barber=True,
+        )
+        
+        self.client1 = self.User.objects.create_user(
+            username="client1",
+            email="client1@example.com",
+            password="testpass123",
+        )
+        
+    def test_request_valid_returns_200(self):
+        self.client.force_authenticate(user=self.client1)
+        
+        weekly_schedule = BarberWeeklySchedule.objects.create(
+            barber=self.barber_user,
+            weekday=2,
+            start_time="09:00:00",
+            end_time="10:00:00",
+            is_active=True,
+        )
+        
+        service = Service.objects.create(
+            barber=self.barber_user,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        url = "/api/barber/available-slots/"
+        
+        response = self.client.get(
+            url,
+            {
+                "barber": self.barber_user.id,
+                "service": service.id,
+                "date": "2026-12-01",
+            },
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("slots", response.data)
+        self.assertEqual(
+            response.data["slots"],
+            [
+                timezone.make_aware(datetime(2026, 12, 1, 9, 0)).isoformat(),
+                timezone.make_aware(datetime(2026, 12, 1, 9, 15)).isoformat(),
+                timezone.make_aware(datetime(2026, 12, 1, 9, 30)).isoformat(),
+            ]
+        )

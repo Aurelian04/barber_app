@@ -9,7 +9,7 @@ router.register(r"barber/lunch-breaks", LunchBreakViewSet, basename="barber-lunc
 router.register(r"barber/exception-schedules", BarberScheduleExceptionViewSet, basename="keekly-exception")
 
 urlpatterns = [
-    path("barber/available-slots", AvailableSlotsView.as_view()),
+    path("barber/available-slots/", AvailableSlotsView.as_view()),
 ]
 
 urlpatterns += router.urls
