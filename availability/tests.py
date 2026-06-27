@@ -1954,3 +1954,25 @@ class AvailableSlotsViewTests(APITestCase):
                 timezone.make_aware(datetime(2026, 12, 1, 9, 30)).isoformat(),
             ]
         )
+        
+    def test_unauthorized_user_returns_403(self):
+        weekly_schedule = BarberWeeklySchedule.objects.create(
+            barber=self.barber_user,
+            weekday=2,
+            start_time="09:00:00",
+            end_time="10:00:00",
+            is_active=True,
+        )
+        
+        service = Service.objects.create(
+            barber=self.barber_user,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        url = "/api/barber/available-slots/"
+        
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
