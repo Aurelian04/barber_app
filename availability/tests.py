@@ -1976,3 +1976,65 @@ class AvailableSlotsViewTests(APITestCase):
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        
+    def test_barber_invalid_returns_400(self):
+        self.client.force_authenticate(user=self.client1)
+        
+        barber2 = self.User.objects.create_user(
+            username="Aur",
+            email="aur@gmail.com",
+            password="aur1234hhhh",
+            is_barber=True
+        )
+                
+        service = Service.objects.create(
+            barber=barber2,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        url = "/api/barber/available-slots/"
+        
+        response = self.client.get(
+            url,
+            {
+                "barber": self.client1.id,
+                "service": service.id,
+                "date": "2026-12-01"
+            }
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("barber", response.data)
+        
+    def test_service_owned_by_another_barber_returns_400(self):
+        self.client.force_authenticate(user=self.client1)
+        
+        barber2 = self.User.objects.create_user(
+            username="Aur",
+            email="aur@gmail.com",
+            password="aur1234hhhh",
+            is_barber=True
+        )
+        
+        service = Service.objects.create(
+            barber=barber2,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        url = "/api/barber/available-slots/"
+        
+        response = self.client.get(
+            url,
+            {
+                "barber": self.barber_user.id,
+                "service": service.id,
+                "date": "2026-12-01",
+            }
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("service", response.data)
