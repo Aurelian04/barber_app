@@ -2038,3 +2038,96 @@ class AvailableSlotsViewTests(APITestCase):
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("service", response.data)
+        
+    def test_dates_in_past(self):
+        self.client.force_authenticate(user=self.client1)
+        
+        service = Service.objects.create(
+            barber=self.barber_user,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        url = "/api/barber/available-slots/"
+        
+        response = self.client.get(
+            url,
+            {
+                "barber": self.barber_user.id,
+                "service": service.id,
+                "date": "2020-12-01",
+            }
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("date", response.data)
+        
+    def test_missing_date_query_parameter_returns_400(self):
+        self.client.force_authenticate(user=self.client1)
+        
+        service = Service.objects.create(
+            barber=self.barber_user,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        url = "/api/barber/available-slots/"
+        
+        response = self.client.get(
+            url,
+            {
+                "barber": self.barber_user.id,
+                "service": service.id,
+            }
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("date", response.data)
+        
+    def test_missing_barber_query_parameter_returns_400(self):
+        self.client.force_authenticate(user=self.client1)
+        
+        service = Service.objects.create(
+            barber=self.barber_user,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        url = "/api/barber/available-slots/"
+        
+        response = self.client.get(
+            url,
+            {
+                "service": service.id,
+                "date": "2026-12-01"
+            }
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("barber", response.data)
+        
+    def test_missing_service_query_parameter_returns_400(self):
+        self.client.force_authenticate(user=self.client1)
+        
+        service = Service.objects.create(
+            barber=self.barber_user,
+            name="Tuns",
+            duration_minutes=30,
+            price="50.00",
+        )
+        
+        url = "/api/barber/available-slots/"
+        
+        response = self.client.get(
+            url,
+            {
+                "barber": self.barber_user.id,
+                "date": "2026-12-01",
+            }
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("service", response.data)
