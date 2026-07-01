@@ -48,22 +48,17 @@ class AppointmentSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"service": "Service is required."})
                 
                 
-        #Service must belong to a barber
         if service.barber_id != barber.id:
             raise serializers.ValidationError({"service": "This service does not belong to the selected barber."})
                 
         if not start_time:
             raise serializers.ValidationError({"start_time": "Start time is required."})
                 
-        # Start time should be in the future
         if timezone.is_aware(start_time) and start_time < timezone.now():
             raise serializers.ValidationError({"start_time": "Start time must be in the future."})
                 
-        #Compute end_time
         end_time = start_time + timedelta(minutes=service.duration_minutes)
                 
-        # Overlap check: only booked appointments block time
-        # Overlap condition: existing.start < new_end AND existing.end > new_start
                 
         qs = Appointment.objects.filter(
             barber = barber,
@@ -72,13 +67,11 @@ class AppointmentSerializer(serializers.ModelSerializer):
             end_time__gt=start_time,
         )
                 
-                #For updates, exclude self
         if self.instance:
             qs = qs.exclude(id=self.instance.id)
                     
         if qs.exists():
             raise serializers.ValidationError({"start_time": "This time slot overlaps with another appointment."})
                 
-        # Save computed end_time into attrs so create/update can use it
         attrs["end_time"] = end_time
         return attrs
