@@ -1,10 +1,12 @@
 from datetime import timedelta
 from django.utils import timezone
 from rest_framework import serializers
+from datetime import datetime
 
 
 from .models import Appointment
 from services.models import Service
+from availability.program_formula import get_available_slots_for_date
 
 
 
@@ -56,6 +58,13 @@ class AppointmentSerializer(serializers.ModelSerializer):
                 
         if timezone.is_aware(start_time) and start_time < timezone.now():
             raise serializers.ValidationError({"start_time": "Start time must be in the future."})
+        
+        date = start_time.date()
+        
+        available_slots = get_available_slots_for_date(barber, date, service)
+        
+        if start_time not in get_available_slots_for_date:
+            raise serializers.ValidationError({"start_time": "Start time must"})
                 
         end_time = start_time + timedelta(minutes=service.duration_minutes)
                 
