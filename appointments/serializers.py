@@ -59,12 +59,16 @@ class AppointmentSerializer(serializers.ModelSerializer):
         if timezone.is_aware(start_time) and start_time < timezone.now():
             raise serializers.ValidationError({"start_time": "Start time must be in the future."})
         
-        date = start_time.date()
+        appointment_date = start_time.date()
         
-        available_slots = get_available_slots_for_date(barber, date, service)
+        available_slots = get_available_slots_for_date(
+            barber, 
+            appointment_date, 
+            service,
+        )
         
-        if start_time not in get_available_slots_for_date:
-            raise serializers.ValidationError({"start_time": "Start time must"})
+        if start_time not in available_slots:
+            raise serializers.ValidationError({"start_time": "Selected start time is not available"})
                 
         end_time = start_time + timedelta(minutes=service.duration_minutes)
                 

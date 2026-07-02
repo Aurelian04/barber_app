@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -8,6 +8,7 @@ from rest_framework.test import APITestCase
 
 from appointments.models import Appointment
 from services.models import Service
+from availability.models import BarberWeeklySchedule
 
 
 
@@ -38,10 +39,18 @@ class AppointmentApiTests(APITestCase):
     def test_client_can_create_appointment(self):
         self.client.force_authenticate(user=self.client_user)
         
+        weekly_schedule = BarberWeeklySchedule.objects.create(
+            barber=self.barber_user,
+            weekday=4,
+            start_time="09:00:00",
+            end_time="11:00:00",
+            is_active=True,
+        )
+        
         payload = {
             "barber": self.barber_user.id,
             "service": self.service.id,
-            "start_time": (timezone.now() + timedelta(days=1)).isoformat(),
+            "start_time": timezone.make_aware(datetime(2026, 12, 3, 9, 15)).isoformat(),
             "notes": "Test appointment",
         }
         
