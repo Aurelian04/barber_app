@@ -270,15 +270,22 @@ class AppointmentApiTests(APITestCase):
             password="testpass123",
         )
         
-        start_time = timezone.now() + timedelta(days=1)
-        end_time = start_time + timedelta(minutes=45)
+        BarberWeeklySchedule.objects.create(
+            barber=self.barber_user,
+            weekday=2,
+            start_time="09:00:00",
+            end_time="11:00:00",
+            is_active=True,
+        )
+        
+        start_time = timezone.make_aware(datetime(2026, 12, 1, 9, 15))
         
         appointment1 = Appointment.objects.create(
             barber=self.barber_user,
             client=client1,
             service=self.service,
             start_time=start_time,
-            end_time=end_time,
+            end_time=timezone.make_aware(datetime(2026, 12, 1, 10, 0)),
             status=Appointment.Status.CANCELLED,
             notes="Tuns",
         )
