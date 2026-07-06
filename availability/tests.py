@@ -10,6 +10,16 @@ from .models import BarberWeeklySchedule, LunchBreak, BarberScheduleException
 
 from .serializers import AvailableSlotsSerializer
 
+from datetime import date, time, datetime
+
+from .program_formula import get_barber_working_intervals_for_date, get_available_slots_for_date
+
+from services.models import Service
+
+from appointments.models import Appointment
+
+from django.utils import timezone
+
 class BarberWeeklyScheduleApiTests(APITestCase):
     def setUp(self):
         self.User = get_user_model()
@@ -1113,17 +1123,6 @@ class BarberScheduleExceptionApiTests(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        
-        
-from datetime import date, time, datetime
-
-from .program_formula import get_barber_working_intervals_for_date, get_available_slots_for_date
-
-from services.models import Service
-
-from appointments.models import Appointment
-
-from django.utils import timezone
 
 
 class BarberWorkingIntervalTests(APITestCase):
