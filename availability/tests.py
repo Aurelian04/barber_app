@@ -1974,7 +1974,7 @@ class AvailableSlotsViewTests(APITestCase):
         
         response = self.client.get(url)
         
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         
     def test_barber_invalid_returns_400(self):
         self.client.force_authenticate(user=self.client1)
