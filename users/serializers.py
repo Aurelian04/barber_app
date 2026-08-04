@@ -8,7 +8,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'phone', 'password']
+        fields = ['username', 'email', 'phone', 'password', 'first_name', 'last_name']
 
     def create(self, validated_data):
         password = validated_data.pop("password")
@@ -31,3 +31,11 @@ class UserSerializer(serializers.ModelSerializer):
             user.set_password(password)
             user.save()
         return user
+    
+class BarberListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'first_name', 'last_name']
+        read_only_fields = ['id', 'first_name', 'last_name']
+        
+    
